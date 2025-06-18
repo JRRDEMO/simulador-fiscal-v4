@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Planificación Fiscal SPEGC v7.0</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <!-- Pantalla de Carga -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="spegc-logo">
+                <div class="logo-text">SPEGC</div>
+                <div class="logo-subtitle">Sociedad de Promoción Económica de Gran Canaria</div>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="loading-slogan">Best in Gran Canaria</div>
+        </div>
+    </div>
+
+    <!-- Modal Disclaimer -->
+    <div id="disclaimerModal" class="modal disclaimer-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚖️ Aviso Legal y Limitación de Responsabilidad</h2>
+            </div>
+            <div class="modal-body">
+                <div class="disclaimer-content">
+                    <h3>Herramienta de Planificación Fiscal SPEGC v7.0</h3>
+                    <p><strong>IMPORTANTE:</strong> Esta herramienta tiene carácter meramente informativo y orientativo. Los cálculos y análisis proporcionados se basan en la normativa fiscal vigente, pero:</p>
+                    
+                    <ul>
+                        <li>No constituyen asesoramiento fiscal, jurídico o contable profesional</li>
+                        <li>Los resultados son estimaciones que pueden diferir de la situación fiscal real</li>
+                        <li>La aplicación de incentivos fiscales requiere cumplir requisitos específicos</li>
+                        <li>Se recomienda consultar con asesores fiscales especializados</li>
+                        <li>SPEGC no se responsabiliza de decisiones tomadas basándose en esta herramienta</li>
+                    </ul>
+
+                    <p><strong>Normativa aplicable:</strong> Ley 19/1994 del Régimen Económico y Fiscal de Canarias, Ley 27/2014 del Impuesto sobre Sociedades, y normativa autonómica vigente.</p>
+                    
+                    <div class="disclaimer-footer">
+                        <p><strong>© 2025 SPEGC - Sociedad de Promoción Económica de Gran Canaria</strong></p>
+                        <p>Desarrollado para el fomento empresarial en Canarias</p>
+                    </div>
+
+                    <div class="acceptance-section">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="acceptTerms">
+                            <span class="checkmark"></span>
+                            He leído y acepto las condiciones de uso y limitaciones de responsabilidad
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="acceptDisclaimerBtn" class="btn btn--primary" disabled>
+                    Acceder a la Herramienta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicación Principal -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-brand">
+                        <div class="spegc-logo-header">SPEGC</div>
+                        <div class="header-title">
+                            <h1>Herramienta de Planificación Fiscal</h1>
+                            <span class="version">v7.0 - Análisis Estratégico Avanzado</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <select id="scenarioSelector" class="form-control scenario-selector">
+                            <option value="default">Escenario Principal</option>
+                        </select>
+                        <button id="newScenarioBtn" class="btn btn--secondary">+ Nuevo Escenario</button>
+                        <button id="exportPdfBtn" class="btn btn--primary">📄 Exportar PDF</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="app-layout">
+                <!-- Panel Izquierdo - Formulario -->
+                <div class="left-panel">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>📊 Configuración de Análisis Fiscal</h3>
+                        </div>
+                        <div class="card__body">
+                            <form id="fiscalForm">
+                                <!-- Datos de la Empresa -->
+                                <section class="form-section">
+                                    <h4>🏢 Datos de la Empresa</h4>
+                                    <div class="form-group">
+                                        <label class="form-label" for="beneficioContable">Beneficio Contable Anual (€)</label>
+                                        <input type="number" id="beneficioContable" class="form-control" min="0" step="1000" placeholder="Ej: 500000">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="numEmpleados">Número de Empleados</label>
+                                        <input type="number" id="numEmpleados" class="form-control" min="1" placeholder="Ej: 25">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="modeloProyeccion">Modelo de Proyección</label>
+                                        <select id="modeloProyeccion" class="form-control">
+                                            <option value="conservador">Conservador (Factor: 0.8)</option>
+                                            <option value="moderado" selected>Moderado (Factor: 1.0)</option>
+                                            <option value="agresivo">Agresivo (Factor: 1.2)</option>
+                                        </select>
+                                    </div>
+                                </section>
+
+                                <!-- Incentivos Fiscales -->
+                                <section class="form-section">
+                                    <h4>🎯 Incentivos Fiscales Aplicables</h4>
+                                    
+                                    <!-- ZEC -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarZEC">
+                                                <span class="checkmark"></span>
+                                                <strong>ZEC (Zona Especial Canaria)</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="zec">ℹ️</button>
+                                        </div>
+                                        <div id="zecFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">Inversión Comprometida (€)</label>
+                                                <input type="number" id="inversionZEC" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Empleos ZEC</label>
+                                                <input type="number" id="empleosZEC" class="form-control" min="5">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">% Beneficios ZEC</label>
+                                                <input type="number" id="beneficiosZEC" class="form-control" min="0" max="100" step="5">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Sector ZEC</label>
+                                                <select id="sectorZEC" class="form-control">
+                                                    <option value="">Seleccionar sector...</option>
+                                                    <option value="servicios_tecnologicos">Servicios Tecnológicos</option>
+                                                    <option value="idi">I+D+i</option>
+                                                    <option value="audiovisual">Audiovisual</option>
+                                                    <option value="industria">Industria Manufacturera</option>
+                                                    <option value="financieros">Servicios Financieros Internacionales</option>
+                                                    <option value="logistica">Logística</option>
+                                                    <option value="renovables">Energías Renovables</option>
+                                                    <option value="biotecnologia">Biotecnología</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RIC -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarRIC">
+                                                <span class="checkmark"></span>
+                                                <strong>RIC (Reserva de Inversiones Canarias)</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="ric">ℹ️</button>
+                                        </div>
+                                        <div id="ricFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">% Dotación RIC (0-90%)</label>
+                                                <input type="range" id="dotacionRIC" class="form-range" min="0" max="90" step="5" value="50">
+                                                <span id="ricValue" class="range-value">50%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DIC -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarDIC">
+                                                <span class="checkmark"></span>
+                                                <strong>DIC (Deducción por Inversiones Canarias)</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="dic">ℹ️</button>
+                                        </div>
+                                        <div id="dicFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">Inversión en Activos Fijos (€)</label>
+                                                <input type="number" id="inversionDIC" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Tipo de Inversión</label>
+                                                <select id="tipoInversionDIC" class="form-control">
+                                                    <option value="general">General (90%)</option>
+                                                    <option value="estrategica">Estratégica (90%)</option>
+                                                </select>
+                                                <button type="button" class="info-btn" data-info="sectores-estrategicos">ℹ️</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- I+D+i -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarIDI">
+                                                <span class="checkmark"></span>
+                                                <strong>I+D+i (Investigación, Desarrollo e Innovación)</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="idi">ℹ️</button>
+                                        </div>
+                                        <div id="idiFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">Gasto Personal I+D (€)</label>
+                                                <input type="number" id="gastoPersonalIDI" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Activos Fijos I+D (€)</label>
+                                                <input type="number" id="activosFijosIDI" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Otros Gastos Operativos (€)</label>
+                                                <input type="number" id="otrosGastosIDI" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Media Gasto 2 Años Anteriores (€)</label>
+                                                <input type="number" id="mediaAnteriorIDI" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="checkbox-container">
+                                                    <input type="checkbox" id="bonificacionPersonal">
+                                                    <span class="checkmark"></span>
+                                                    Bonificación Personal Cualificado (30.6%)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Innovación Tecnológica -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarIT">
+                                                <span class="checkmark"></span>
+                                                <strong>IT (Innovación Tecnológica)</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="it">ℹ️</button>
+                                        </div>
+                                        <div id="itFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">Gastos IT en Canarias (€)</label>
+                                                <input type="number" id="gastosIT" class="form-control" min="0" step="1000">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Audiovisual -->
+                                    <div class="incentive-group">
+                                        <div class="incentive-header">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="aplicarAudiovisual">
+                                                <span class="checkmark"></span>
+                                                <strong>Audiovisual</strong>
+                                            </label>
+                                            <button type="button" class="info-btn" data-info="audiovisual">ℹ️</button>
+                                        </div>
+                                        <div id="audiovisualFields" class="incentive-fields" style="display: none;">
+                                            <div class="form-group">
+                                                <label class="form-label">Gasto Producción (€)</label>
+                                                <input type="number" id="gastoProduccion" class="form-control" min="0" step="1000">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Tipo de Producción</label>
+                                                <select id="tipoProduccion" class="form-control">
+                                                    <option value="espanola">Producción Española</option>
+                                                    <option value="extranjera">Producción Extranjera</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div class="form-actions">
+                                    <button type="button" id="calculateBtn" class="btn btn--primary btn--full-width">
+                                        🧮 Calcular Análisis Fiscal
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho - Dashboard -->
+                <div class="right-panel">
+                    <div id="resultsSection" class="results-section" style="display: none;">
+                        <!-- KPIs Estratégicos -->
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>📈 KPIs Estratégicos</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="kpis-grid">
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">Tipo Impositivo Efectivo</div>
+                                        <div class="kpi-value" id="tipoEfectivo">--%</div>
+                                    </div>
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">ROI Fiscal de la Inversión</div>
+                                        <div class="kpi-value" id="roiFiscal">--%</div>
+                                    </div>
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">Ahorro Fiscal Total</div>
+                                        <div class="kpi-value" id="ahorroTotal">--€</div>
+                                    </div>
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">Flujo de Caja Liberado</div>
+                                        <div class="kpi-value" id="flujoLiberado">--€</div>
+                                    </div>
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">Reducción Payback</div>
+                                        <div class="kpi-value" id="reduccionPayback">-- meses</div>
+                                    </div>
+                                    <div class="kpi-card">
+                                        <div class="kpi-label">Capacidad Reinversión</div>
+                                        <div class="kpi-value" id="capacidadReinversion">--€</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cálculo Fiscal Detallado -->
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>🧮 Cálculo Fiscal Detallado</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="fiscal-breakdown">
+                                    <div class="breakdown-item">
+                                        <span>Beneficio Contable:</span>
+                                        <span id="beneficioContableResult">--€</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span>Base Imponible (con RIC):</span>
+                                        <span id="baseImponible">--€</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span>Cuota Íntegra:</span>
+                                        <span id="cuotaIntegra">--€</span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span>Total Deducciones:</span>
+                                        <span id="totalDeducciones">--€</span>
+                                    </div>
+                                    <div class="breakdown-item highlight">
+                                        <span><strong>Cuota Líquida Final:</strong></span>
+                                        <span id="cuotaLiquida"><strong>--€</strong></span>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <span>Carry-forwards (Saldos Pendientes):</span>
+                                        <span id="carryForwards">--€</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Análisis Estratégico -->
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>🎯 Análisis Estratégico y Recomendaciones</h3>
+                            </div>
+                            <div class="card__body">
+                                <div id="strategicAnalysis" class="strategic-content">
+                                    <div class="analysis-placeholder">
+                                        Complete el formulario para ver el análisis estratégico personalizado.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Comparación -->
+                        <div class="card">
+                            <div class="card__header">
+                                <h3>📊 Comparación Fiscal</h3>
+                            </div>
+                            <div class="card__body">
+                                <div class="chart-container">
+                                    <canvas id="comparisonChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales Informativos -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="infoModalTitle">Información</h3>
+                <button type="button" class="close-btn" onclick="closeInfoModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="infoModalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Escenario -->
+    <div id="newScenarioModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Crear Nuevo Escenario</h3>
+                <button type="button" class="close-btn" onclick="closeNewScenarioModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Escenario</label>
+                    <input type="text" id="scenarioName" class="form-control" placeholder="Ej: Escenario Optimista">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="copyCurrentData">
+                        <span class="checkmark"></span>
+                        Copiar datos del escenario actual
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn--secondary" onclick="closeNewScenarioModal()">Cancelar</button>
+                <button type="button" class="btn btn--primary" onclick="createScenario()">Crear Escenario</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
